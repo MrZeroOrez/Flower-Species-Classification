@@ -2,9 +2,12 @@
 from contextlib import asynccontextmanager
 from io import BytesIO
 import logging
+from pathlib import Path
 import warnings
 
 from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.responses import FileResponse
+from fastapi.staticfiles import StaticFiles
 from PIL import Image, ImageOps, UnidentifiedImageError
 from starlette.concurrency import run_in_threadpool
 
@@ -42,6 +45,12 @@ def create_app(predictor=None):
 
     app = FastAPI(title="Flower Identification API", version="0.1.0", lifespan=lifespan)
     app.state.predictor = predictor
+    static_dir = Path(__file__).resolve().parent / "static"
+    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+
+    @app.get("/", include_in_schema=False)
+    def home():
+        return FileResponse(static_dir / "index.html")
 
     @app.get("/health")
     def health():

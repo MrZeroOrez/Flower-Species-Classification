@@ -9,3 +9,5 @@ artifacts/*
 uploads/
 data/
 training-output/
+node_modules/
+.ui-qa/

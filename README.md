@@ -1,8 +1,8 @@
 # Flower Identification & Care AI Agent
 
 An incremental extension of the original PyTorch flower classification notebook.
-**Current implementation: Phase 1 prediction API foundation.** Agent workflows,
-care retrieval, memory, reminders and web UI are planned, not implemented.
+**Current implementation: prediction API, trained baseline and responsive upload UI.**
+Agent workflows, care retrieval, memory and reminders are planned, not implemented.
 
 ## Current status
 
@@ -37,7 +37,8 @@ python3 -m venv .venv
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://localhost:8000/docs to try the API. CPU-only PyTorch is installed
+Open http://localhost:8000 for the image upload UI, or http://localhost:8000/docs
+to try the API directly. CPU-only PyTorch is installed
 separately to avoid a CUDA runtime. No paid API key or LLM is needed for Phase 1.
 For API-only development without weights, skip the model requirements.
 
@@ -123,10 +124,35 @@ Tests cover missing artifacts, invalid uploads, deterministic preprocessing,
 synthetic checkpoint/label wiring and incompatible weights. Model tests skip if
 PyTorch is not installed. Synthetic checkpoints test infrastructure, not accuracy.
 
+## Image upload UI
+
+The home page is served by the same FastAPI process, using local HTML/CSS/JS.
+No Node runtime, frontend build, CDN or extra hosting service is required to run it.
+Choose or drag in one JPEG/PNG image, inspect its preview, and select **Identify
+flower**. Results show the top class and three model scores. Scores are explicitly
+uncalibrated; the baseline quality limitations stay visible.
+
+The UI handles empty/invalid/oversized images, missing model artifacts, network
+failures, server errors and request timeouts. Replacing or clearing an image
+cancels the old request, preventing stale results. The API does not save uploads.
+
+Optional browser checks (Node.js required only for this verification):
+
+```powershell
+npm install
+npx playwright install chromium
+.\.venv\Scripts\python.exe -m scripts.check_browser
+```
+
+These checks require `data/manifest.json`, dataset images and trained artifacts
+from the earlier preparation/training steps. The runner temporarily starts the
+API on port 8011 and stops it after checking the browser flow. Screenshots and
+logs are local, ignored QA files. See [UI verification](docs/UI_VERIFICATION.md).
+
 ## Next milestones
 
 1. Improve baseline quality, especially rose/tulip separation; add independent evaluation.
-2. Add image upload/results UI and measure hosting memory requirements.
+2. Measure hosting memory requirements before deployment; the upload/results UI is implemented.
 3. Add source-backed care information and a LangGraph tool workflow.
 4. Add user-scoped persistent memory and opt-in reminders.
 

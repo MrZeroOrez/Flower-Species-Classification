@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#244d3c">
+  <meta name="description" content="Explore five flower categories with an image classifier. Upload a flower photo and compare model predictions.">
+  <title>Flower Lab — A closer look</title>
+  <link rel="icon" href="data:,">
+  <link rel="stylesheet" href="/static/styles.css">
+  <script src="/static/app.js" defer></script>
+</head>
+<body>
+  <header class="site-header wrap">
+    <a class="brand" href="/" aria-label="Flower Lab home"><span class="brand-icon" aria-hidden="true">✳</span> Flower Lab<span class="brand-dot">.</span></a>
+    <div class="header-right"><span class="edition">A BOTANICAL EXPLORATION</span><a href="/docs">API docs <span aria-hidden="true">↗</span></a></div>
+  </header>
+
+  <main class="wrap">
+    <section class="intro" aria-labelledby="page-title">
+      <div><p class="eyebrow"><span class="tiny-line"></span> CURIOSITY, IN BLOOM</p>
+        <h1 id="page-title">A little closer<br>to <em>nature.</em></h1>
+        <p class="intro-copy">Found a flower? Give your curiosity a name.<br>Upload a photo and explore what the model sees.</p>
+      </div>
+      <aside class="intro-note"><span class="note-number">05</span><div><span class="small-label">FLOWER CATEGORIES</span><p>One photo.<br>A fresh perspective.</p></div></aside>
+    </section>
+
+    <section class="workspace" aria-label="Identify a flower">
+      <div class="upload-panel">
+        <div class="panel-heading"><h2><span class="step-number">01</span> Your photograph</h2><span class="small-label">JPEG / PNG</span></div>
+        <form id="identify-form">
+          <div id="drop-zone" class="drop-zone">
+            <div id="upload-empty" class="upload-empty">
+              <svg class="flower-drawing" viewBox="0 0 120 140" fill="none" aria-hidden="true"><path d="M60 127V75M60 108C28 110 23 91 23 91c24-5 35 9 37 17ZM60 119c32-1 39-23 39-23-26-3-38 14-39 23Z" stroke="currentColor" stroke-width="2"/><path d="M60 42c-31-45-49 9-21 19-47 9-12 50 13 23-4 47 47 30 33 0 41 10 39-41 8-35C116 12 66 4 60 42Z" stroke="currentColor" stroke-width="2"/><circle cx="66" cy="61" r="14" fill="#e3c775" stroke="currentColor" stroke-width="2"/></svg>
+              <h3>A flower worth a closer look</h3><p>Drag your photo here, or choose one below.</p>
+            </div>
+            <img id="preview" class="preview" alt="Selected flower photo" hidden>
+            <div class="file-picker"><label class="choose-button" for="image-file">Choose image <span aria-hidden="true">↗</span></label><input class="sr-only" type="file" id="image-file" accept="image/jpeg,image/png" aria-describedby="file-help"></div>
+            <p id="file-help" class="file-help">Up to 5 MiB · 12 megapixels maximum</p>
+          </div>
+          <div class="selection-row"><p id="file-name">No image selected</p><button id="clear-button" class="text-button" type="button" hidden>Clear image</button></div>
+          <p id="upload-error" class="error-message" role="alert" hidden></p>
+          <button id="identify-button" class="identify-button" type="submit" disabled><span id="button-label">Identify flower</span><span aria-hidden="true">↗</span></button>
+          <p class="upload-note">Choose a clear photo with one flower in focus.</p>
+        </form>
+      </div>
+
+      <div class="result-panel" aria-busy="false" id="result-panel">
+        <div class="panel-heading"><h2><span class="step-number">02</span> A closer look</h2><span id="model-status" class="status" role="status">Checking model…</span></div>
+        <div id="service-message" class="service-message" hidden><p id="service-text"></p><button id="retry-button" class="text-button" type="button">Check again</button></div>
+        <div id="result-empty" class="result-empty"><span class="empty-symbol" aria-hidden="true">✧</span><p class="small-label">A NAME IS JUST THE BEGINNING</p><h3>Your next discovery<br>starts with a photo.</h3><p>Choose an image, then identify your flower.<br>Your model results will appear here.</p></div>
+        <div id="result-content" class="result-content" hidden>
+          <p class="small-label">TOP MODEL MATCH</p><div class="prediction-title"><h3 id="predicted-class"></h3><span class="result-mark" aria-hidden="true">✳</span></div>
+          <div class="score-line"><span>Model score</span><strong id="primary-score"></strong></div>
+          <div class="divider"></div><h4>Compare the possibilities</h4><ol id="prediction-list" class="prediction-list"></ol>
+          <p class="score-note" id="score-notice"></p>
+        </div>
+        <p id="result-announcement" class="sr-only" role="status" aria-live="polite"></p>
+        <div class="result-footer"><span class="small-label">A LEARNING MODEL, NOT AN EXPERT</span><p>67.7% test accuracy on 644 held-out images. Rose results are less reliable. Unsupported images can still receive high scores.</p></div>
+      </div>
+    </section>
+
+    <section class="collection" aria-labelledby="collection-title"><div><p class="eyebrow">THE CURRENT COLLECTION</p><h2 id="collection-title">Five flowers. Endless fascination.</h2></div><div class="class-list" id="class-list" aria-label="Supported flower categories"><span>Loading model categories…</span></div></section>
+    <footer class="site-footer"><span>Flower Lab · Made for the curious.</span><a href="https://www.kaggle.com/datasets/alxmamaev/flowers-recognition" target="_blank" rel="noopener noreferrer">Explore the dataset ↗</a></footer>
+  </main>
+</body>
+</html>

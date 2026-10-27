@@ -30,6 +30,16 @@ def test_missing_model_is_honest(unavailable):
     assert "predicted_class" not in response.json()
 
 
+def test_ui_and_assets_available_without_model(unavailable):
+    home = unavailable.get("/")
+    assert home.status_code == 200
+    assert "text/html" in home.headers["content-type"]
+    assert 'id="image-file"' in home.text
+    for asset in ["app.js", "styles.css"]:
+        assert unavailable.get("/static/" + asset).status_code == 200
+    assert unavailable.get("/static/flowers-resnet9.pth").status_code == 404
+
+
 @pytest.mark.parametrize("data,status", [(b"", 400), (b"not an image", 400),
                                            (b"x" * (5 * 1024 * 1024 + 1), 413)])
 def test_invalid_uploads(unavailable, data, status):
