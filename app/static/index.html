@@ -61,6 +61,18 @@
     </section>
 
     <section class="collection" aria-labelledby="collection-title"><div><p class="eyebrow">THE CURRENT COLLECTION</p><h2 id="collection-title">Five flowers. Endless fascination.</h2></div><div class="class-list" id="class-list" aria-label="Supported flower categories"><span>Loading model categories…</span></div></section>
+    <section class="care-panel" aria-labelledby="care-title">
+      <div class="care-intro"><p class="eyebrow">A LITTLE KNOWLEDGE GOES A LONG WAY</p><h2 id="care-title">Help your curiosity grow.</h2><p>Explore reviewed care references. Confirm the flower category yourself; a photo prediction cannot establish its species.</p></div>
+      <form id="care-form" class="care-form">
+        <div><label for="care-flower">Flower category</label><select id="care-flower" required><option value="">Choose a flower</option><option value="daisy">Daisy</option><option value="dandelion">Dandelion</option><option value="rose">Rose</option><option value="sunflower">Sunflower</option><option value="tulip">Tulip</option></select></div>
+        <div class="care-question-field"><label for="care-question">What would you like to know?</label><input id="care-question" maxlength="400" placeholder="e.g. How much sunlight does it need?" aria-describedby="care-help"></div>
+        <button id="care-submit" class="identify-button" type="submit" disabled>Show care guide ↗</button>
+      </form>
+      <p id="care-help" class="care-help">Ask about light, soil, watering, pruning or seasons. Leave the question empty for an overview. These are reference answers; no conversation is saved.</p>
+      <div class="care-shortcuts" aria-label="Suggested care questions"><button type="button" data-care-question="What sunlight does it need?">Sunlight</button><button type="button" data-care-question="How should I water it?">Watering</button><button type="button" data-care-question="What soil does it need?">Soil</button></div>
+      <p id="care-error" class="error-message" role="alert" hidden></p>
+      <div id="care-output" class="care-output" aria-live="polite" hidden><p id="care-mode" class="small-label"></p><h3 id="care-reference"></h3><p id="care-context" class="care-context"></p><p id="care-notice"></p><dl id="care-facts" class="care-facts"></dl><div id="care-sources" class="care-sources"></div><p id="care-limitations" class="care-help"></p></div>
+    </section>
     <footer class="site-footer"><span>Flower Lab · Made for the curious.</span><a href="https://www.kaggle.com/datasets/alxmamaev/flowers-recognition" target="_blank" rel="noopener noreferrer">Explore the dataset ↗</a></footer>
   </main>
 </body>

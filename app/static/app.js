@@ -4,7 +4,7 @@ const state = { file: null, previewUrl: null, modelReady: false, busy: false, ve
 const titleCase = value => value.charAt(0).toUpperCase() + value.slice(1);
 function updateButton() { $('identify-button').disabled = !state.file || !state.modelReady || state.busy; }
 function error(message = '') { $('upload-error').textContent = message; $('upload-error').hidden = !message; }
-function resetResult() { $('result-content').hidden = true; $('result-empty').hidden = false; $('result-announcement').textContent = ''; }
+function resetResult() { $('result-content').hidden = true; $('result-empty').hidden = false; $('result-announcement').textContent = ''; resetCare(); }
 function cancelRequest() {
   state.version++;
   state.controller?.abort(); state.controller = null; state.busy = false;
@@ -75,6 +75,8 @@ function renderPrediction(data) {
   $('score-notice').textContent = typeof data.notice === 'string' ? data.notice : 'Model scores are not identification certainty.';
   $('result-empty').hidden = true; $('result-content').hidden = false;
   $('result-announcement').textContent = `Top model match: ${data.predicted_class}. Model score: ${(data.score * 100).toFixed(1)} percent.`;
+  if (Array.from($('care-flower').options).some(option => option.value === data.predicted_class)) $('care-flower').value = data.predicted_class;
+  $('care-submit').disabled = !$('care-flower').value;
 }
 $('identify-form').addEventListener('submit', async event => {
   event.preventDefault(); if (!state.file || !state.modelReady || state.busy) return;
@@ -109,4 +111,54 @@ for (const name of ['dragenter', 'dragover']) zone.addEventListener(name, event 
 for (const name of ['dragleave', 'drop']) zone.addEventListener(name, event => { event.preventDefault(); zone.classList.remove('dragging'); });
 zone.addEventListener('drop', event => { if (event.dataTransfer.files.length !== 1) { clearSelection(); error('Choose one image at a time.'); } else selectFile(event.dataTransfer.files[0]); });
 window.addEventListener('beforeunload', () => { if (state.previewUrl) URL.revokeObjectURL(state.previewUrl); });
+const careState = { version: 0, controller: null };
+function resetCare(clearChoice = true) {
+  careState.version++; careState.controller?.abort(); careState.controller = null;
+  if (clearChoice) { $('care-flower').value = ''; $('care-question').value = ''; }
+  $('care-output').hidden = true; $('care-error').hidden = true;
+  $('care-submit').textContent = 'Show care guide ↗'; $('care-submit').disabled = !$('care-flower').value;
+  $('care-form').setAttribute('aria-busy', 'false');
+}
+function renderCare(data) {
+  if (!Array.isArray(data.facts) || !Array.isArray(data.sources)) throw new Error('The care service returned an unexpected response.');
+  $('care-mode').textContent = data.mode === 'llm_tool_routing' ? 'LLM-assisted topic selection · reviewed sources' : 'Guided source lookup';
+  $('care-reference').textContent = data.reference_plant || 'A little more information is needed';
+  $('care-context').textContent = data.context_note || '';
+  $('care-notice').textContent = data.notice || '';
+  $('care-facts').replaceChildren(...data.facts.flatMap(fact => {
+    const term = document.createElement('dt'); term.textContent = titleCase(fact.topic);
+    const description = document.createElement('dd'); description.textContent = fact.text;
+    const sourceIndex = data.sources.findIndex(source => source.id === fact.source_id);
+    if (sourceIndex >= 0) { const citation = document.createElement('a'); citation.href = `#care-source-${sourceIndex}`; citation.textContent = ` [${sourceIndex + 1}]`; citation.setAttribute('aria-label', `Source ${sourceIndex + 1} for ${fact.topic}`); description.append(citation); }
+    return [term, description];
+  }));
+  $('care-sources').replaceChildren(...data.sources.map((source, index) => {
+    const url = new URL(source.url);
+    if (url.protocol !== 'https:' || !['plants.ces.ncsu.edu', 'www.rhs.org.uk'].includes(url.hostname)) throw new Error('The care source could not be validated.');
+    const row = document.createElement('p'); row.id = `care-source-${index}`;
+    const link = document.createElement('a'); link.href = url.href; link.textContent = `[${index + 1}] ${source.title} ↗`; link.target = '_blank'; link.rel = 'noopener noreferrer';
+    row.append(link, document.createTextNode(` · reviewed ${source.reviewed_on}`)); return row;
+  }));
+  $('care-limitations').textContent = data.limitations || ''; $('care-output').hidden = false;
+}
+$('care-flower').addEventListener('change', () => resetCare(false));
+$('care-form').addEventListener('submit', async event => {
+  event.preventDefault(); if (!$('care-flower').value) return;
+  resetCare(false); const version = careState.version; const controller = new AbortController(); careState.controller = controller;
+  const timer = setTimeout(() => controller.abort(), 25000);
+  $('care-submit').disabled = true; $('care-submit').textContent = 'Looking up sources…'; $('care-form').setAttribute('aria-busy', 'true');
+  try {
+    const response = await fetch('/care/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, signal: controller.signal,
+      body: JSON.stringify({ flower: $('care-flower').value, question: $('care-question').value }) });
+    if (!response.ok) throw new Error('The care guide is unavailable. Please try again.');
+    const data = await response.json(); if (version !== careState.version) return;
+    renderCare(data);
+  } catch (failure) {
+    if (version === careState.version) { $('care-error').textContent = failure.name === 'AbortError' ? 'The care request timed out. Please try again.' : 'The care guide could not be loaded. Please try again.'; $('care-error').hidden = false; }
+  } finally {
+    clearTimeout(timer);
+    if (version === careState.version) { careState.controller = null; $('care-submit').disabled = !$('care-flower').value; $('care-submit').textContent = 'Show care guide ↗'; $('care-form').setAttribute('aria-busy', 'false'); }
+  }
+});
+document.querySelectorAll('[data-care-question]').forEach(button => button.addEventListener('click', () => { $('care-question').value = button.dataset.careQuestion; if ($('care-flower').value) $('care-form').requestSubmit(); else { $('care-error').textContent = 'Choose a flower category first.'; $('care-error').hidden = false; } }));
 checkModel();

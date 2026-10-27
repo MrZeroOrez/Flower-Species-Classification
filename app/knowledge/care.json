@@ -1,0 +1,60 @@
+{
+  "reviewed_on": "2026-10-28",
+  "profiles": {
+    "daisy": {
+      "reference_plant": "Shasta daisy (Leucanthemum x superbum)",
+      "context_note": "Daisy is a broad image label, not a species identification. This reference is ONLY for Shasta daisy; confirm the plant type before applying it.",
+      "source": {"title": "NC State Extension: Shasta daisy", "url": "https://plants.ces.ncsu.edu/plants/leucanthemum-x-superbum/"},
+      "facts": {
+        "sunlight": "Shasta daisies grow in sunny positions and can also tolerate some shade.",
+        "soil": "Use soil enriched with organic material that drains freely. Poor drainage, especially in winter, is unsuitable.",
+        "watering": "Established Shasta daisies tolerate drought. The source does not provide a universal watering interval.",
+        "pruning": "Removing faded blooms encourages another flowering flush. Divide crowded clumps roughly every two to three years."
+      }
+    },
+    "dandelion": {
+      "reference_plant": "Common dandelion (Taraxacum officinale)",
+      "context_note": "This reference concerns common dandelion. The classifier does not establish botanical species.",
+      "source": {"title": "NC State Extension: Dandelion", "url": "https://plants.ces.ncsu.edu/plants/taraxacum-officinale/"},
+      "facts": {
+        "sunlight": "Common dandelion grows in a sunny site; NC State lists at least six hours of direct sun.",
+        "soil": "Its long taproot allows it to establish in compacted ground.",
+        "seasonal": "It is a perennial that spreads readily through wind-carried seeds. It can contribute early-season food for pollinating insects."
+      }
+    },
+    "rose": {
+      "reference_plant": "Garden roses (Rosa; type varies)",
+      "context_note": "Rose varieties have different needs, especially for pruning. Confirm the variety; the image classifier has low rose recall.",
+      "source": {"title": "Royal Horticultural Society: Growing roses", "url": "https://www.rhs.org.uk/plants/roses/growing-guide/"},
+      "facts": {
+        "sunlight": "A sunny location is generally preferred, although some roses tolerate lighter shade.",
+        "soil": "Choose fertile soil that holds moisture while allowing excess water to drain away.",
+        "watering": "Newly planted roses need regular watering while establishing. Established plants may need extra water in dry weather. Water the root area; container plants can dry faster than those in beds.",
+        "pruning": "Removing fading flowers can encourage further blooms. Pruning technique depends on the rose type; use its specific guide."
+      }
+    },
+    "sunflower": {
+      "reference_plant": "Common annual sunflower (Helianthus annuus)",
+      "context_note": "This guide concerns common annual sunflower, not every perennial Helianthus species. Check the plant label and local climate.",
+      "source": {"title": "NC State Extension: Common sunflower", "url": "https://plants.ces.ncsu.edu/plants/helianthus-annuus/"},
+      "facts": {
+        "sunlight": "Common annual sunflowers prefer a sunny, open position.",
+        "soil": "They prefer moist soil that drains well and can grow in loam, sand or clay.",
+        "watering": "Once established, common sunflowers can tolerate dry conditions. The source does not specify one fixed watering schedule.",
+        "seasonal": "This is a warm-season annual that does not tolerate frost. Taller cultivars may need staking and shelter from strong wind."
+      }
+    },
+    "tulip": {
+      "reference_plant": "Garden tulips (Tulipa)",
+      "context_note": "Tulip species and hybrids differ. The source describes temperate growing conditions; timing cannot be transferred directly to every climate.",
+      "source": {"title": "NC State Extension: Tulip", "url": "https://plants.ces.ncsu.edu/plants/tulipa/"},
+      "facts": {
+        "sunlight": "Garden tulips generally grow best in a sunny position.",
+        "soil": "Use fertile soil with organic material and effective drainage. Persistent wetness can lead to bulb or root decay.",
+        "watering": "The source describes moderately moist growing soil and dry summer conditions, rather than a year-round fixed watering schedule.",
+        "pruning": "When retaining bulbs as perennials, remove spent flower stems but leave the leaves until they turn yellow.",
+        "seasonal": "Tulips suit cool, moist winters followed by warm, dry summers. Many hybrids flower less strongly in later years."
+      }
+    }
+  }
+}

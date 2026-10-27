@@ -40,10 +40,29 @@ const path = require('node:path');
     assert.equal(await page.locator('#prediction-list li').count(), 3);
     await page.screenshot({ path: '.ui-qa/desktop-result.png', fullPage: true });
 
+    // Care lookup uses the selected category and returns real curated citations.
+    assert.equal(await page.locator('#care-flower').inputValue(), result.predicted_class, JSON.stringify(errors));
+    await page.locator('#care-flower').selectOption('rose');
+    await page.locator('#care-question').fill('How should I water it?');
+    await page.locator('#care-submit').click();
+    await page.locator('#care-output').waitFor({ state: 'visible' });
+    assert.equal(await page.locator('#care-mode').textContent(), 'Guided source lookup');
+    assert.equal(await page.locator('#care-facts dt').textContent(), 'Watering');
+    assert.match(await page.locator('#care-sources a').getAttribute('href'), /rhs.org.uk\/plants\/roses/);
+    await page.getByRole('button', { name: 'Soil', exact: true }).click();
+    await page.waitForFunction(() => document.querySelector('#care-facts dt')?.textContent === 'Soil');
+    await page.screenshot({ path: '.ui-qa/desktop-care.png', fullPage: true });
+    await page.locator('#care-question').fill('What is Bitcoin?');
+    await page.locator('#care-submit').click();
+    await page.locator('#care-notice').getByText('I do not have a reviewed answer', { exact: false }).waitFor();
+    assert.equal(await page.locator('#care-facts dt').count(), 0);
+    assert.equal(await page.locator('#care-sources a').count(), 0);
+
     await page.getByRole('button', { name: 'Clear image' }).click();
     assert.equal(await page.locator('#preview').isVisible(), false);
     assert.equal(await page.locator('#result-content').isVisible(), false);
     assert.equal(await page.locator('#identify-button').isDisabled(), true);
+    assert.equal(await page.locator('#care-output').isVisible(), false);
     await page.locator('#image-file').setInputFiles({ name: 'bad.png', mimeType: 'image/png', buffer: Buffer.from('broken') });
     await page.getByRole('alert').filter({ hasText: 'could not be opened' }).waitFor();
     assert.equal(await page.locator('#identify-button').isDisabled(), true);
@@ -76,6 +95,11 @@ const path = require('node:path');
     await page.getByText('Model unavailable', { exact: true }).waitFor();
     assert.equal(await page.locator('#service-message').isVisible(), true);
     assert.equal(await page.locator('#identify-button').isDisabled(), true);
+    // Care references work even when classifier weights are missing.
+    await page.locator('#care-flower').selectOption('sunflower');
+    await page.locator('#care-submit').click();
+    await page.locator('#care-output').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#care-reference').textContent(), /sunflower/i);
     await page.unroute('**/health');
     await page.getByRole('button', { name: 'Check again' }).click();
     await page.getByText('Model ready', { exact: true }).waitFor();
@@ -88,6 +112,12 @@ const path = require('node:path');
     assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
     await page.screenshot({ path: '.ui-qa/mobile-result.png', fullPage: true });
     assert.deepEqual(errors, []);
-    console.log('PASS: real image → API → model → rendered scores; reset; invalid/oversize upload; server failure; stale-response cancellation; missing model/retry; mobile layout; no browser errors.');
+    await page.locator('#care-flower').selectOption('daisy');
+    await page.locator('#care-submit').click();
+    await page.locator('#care-output').waitFor({ state: 'visible' });
+    assert.match(await page.locator('#care-context').textContent(), /ONLY for Shasta daisy/);
+    assert.equal(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), true);
+    await page.screenshot({ path: '.ui-qa/mobile-care.png', fullPage: true });
+    console.log('PASS: real image → API → model → rendered scores; upload/error/reset states; care citations and follow-ups; unknown-question abstention; care without classifier; daisy ambiguity; mobile layout; no browser errors.');
   } finally { await browser.close(); }
 })().catch(error => { console.error(error); process.exitCode = 1; });

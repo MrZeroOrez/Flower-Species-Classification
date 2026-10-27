@@ -1,8 +1,9 @@
 # Flower Identification & Care AI Agent
 
 An incremental extension of the original PyTorch flower classification notebook.
-**Current implementation: prediction API, trained baseline and responsive upload UI.**
-Agent workflows, care retrieval, memory and reminders are planned, not implemented.
+**Current implementation: prediction API, trained baseline, upload UI and source-backed
+LangGraph care workflow.** Optional LLM tool routing is implemented but not live-provider
+verified. Saved memory, vector retrieval and reminders are not implemented.
 
 ## Current status
 
@@ -149,11 +150,24 @@ from the earlier preparation/training steps. The runner temporarily starts the
 API on port 8011 and stops it after checking the browser flow. Screenshots and
 logs are local, ignored QA files. See [UI verification](docs/UI_VERIFICATION.md).
 
+## Flower care and LangGraph
+
+The home page includes a care panel with source-linked answers for the five
+categories. A prediction preselects a category, which you can correct manually.
+Select **Show care guide**, or ask about light, soil, watering, pruning or season.
+References also work without classifier weights. Unknown or uncovered questions
+receive a clarification/refusal instead of invented care instructions.
+
+The default **Guided source lookup** uses no LLM key. An optional remote model can
+select a validated lookup tool; it never writes the botanical facts or URLs. See
+[care workflow, sources and optional configuration](docs/CARE_WORKFLOW.md).
+This does not yet add saved conversations, plant profiles, reminders or vector RAG.
+
 ## Next milestones
 
 1. Improve baseline quality, especially rose/tulip separation; add independent evaluation.
 2. Measure hosting memory requirements before deployment; the upload/results UI is implemented.
-3. Add source-backed care information and a LangGraph tool workflow.
+3. Verify optional routing with a real configured LLM; expand reviewed knowledge and evaluate answers.
 4. Add user-scoped persistent memory and opt-in reminders.
 
 This is a local-development API foundation. Public deployment needs gateway

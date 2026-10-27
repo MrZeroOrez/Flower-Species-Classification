@@ -25,7 +25,7 @@ for successful inference; failure states use explicitly intercepted responses.
 
 ## Checks
 
-- 13 Python API/data tests.
+- 33 Python API/data/care tests.
 - JavaScript syntax validation.
 - Playwright/Chromium suite: real upload, scores, reset, invalid/oversized images,
   server failure, stale-response cancellation, missing-model retry and mobile.
@@ -38,8 +38,16 @@ not an application dependency.
 
 ## Scope and limitations
 
-The UI does not add care advice, agent workflows, user accounts or memory.
+Follow-up: the UI now includes source-linked care lookup and a bounded LangGraph
+workflow; see CARE_WORKFLOW.md. User accounts and saved memory remain absent.
 Evaluation remains the existing three-epoch baseline: 67.70% held-out accuracy,
 28.21% rose recall, uncalibrated scores and no unsupported-image rejection.
 This verifies local behavior, not an externally deployed service or free-host
 resource limits.
+
+## Care-panel follow-up
+
+Browser verification additionally passed category preselection/correction, source
+links, topic follow-ups, unsupported-question refusal, care without classifier
+weights, daisy reference ambiguity and mobile layout. The live provider path was
+not exercised; the browser used the no-key guided workflow.
