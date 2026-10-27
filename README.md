@@ -1,64 +1,139 @@
-# DeepLearningProject
-# Flower Species Classification with Deep Learning
+# Flower Identification & Care AI Agent
 
-This Jupyter Notebook presents a deep learning project for classifying flower species using Convolutional Neural Networks (CNN). The project is designed to recognize different species of flowers based on images.This project focuses on classifying flower species using PyTorch, a popular deep learning framework. It covers several essential tasks in a machine learning project, from data exploration and preparation to model training and inference.
+An incremental extension of the original PyTorch flower classification notebook.
+**Current implementation: Phase 1 prediction API foundation.** Agent workflows,
+care retrieval, memory, reminders and web UI are planned, not implemented.
 
-![flower](https://github.com/chandramohan0/Flower-Species-Classification/assets/77689644/0aaa3bba-6d60-406a-bf15-2244c809e9cd)
+## Current status
 
+The notebook records five categories: **daisy, dandelion, rose, sunflower, tulip**.
+The original notebook checkpoint is **not present in this repository**. A new
+3-epoch baseline has now been trained: **67.70% held-out test accuracy** on 644
+images. See [training results and class-specific limitations](docs/TRAINING_RESULTS.md).
+Weights are distributed separately, not committed to Git. The API returns HTTP
+503 until valid weights and label metadata are placed in `artifacts/`.
 
+The original notebook is preserved in `deep_learning_project.ipynb`. See
+[the source audit and completion gates](docs/PHASE_1.md) and
+[the original project description](docs/ORIGINAL_README.md).
 
-## Table of Contents
-- [Introduction](#introduction)
-- [Dataset](#dataset)
-- [Project Structure](#project-structure)
-- [Exploring the Dataset](#exploring-the-dataset)
-- [Data Preparation](#data-preparation)
-- [GPU Acceleration](#gpu-acceleration)
-- [Neural Network Architecture](#neural-network-architecture)
-- [Model Training](#model-training)
-- [Making Predictions](#making-predictions)
+## Run locally (Python 3.11 or 3.12 recommended)
 
-## Introduction
-This project showcases a complete pipeline for training a flower species classification model using PyTorch. It includes data loading, preprocessing, model definition, training, and inference.
+Windows PowerShell, from the repository folder:
 
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements.txt
+.\.venv\Scripts\python.exe -m pip install -r requirements-model.txt
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
 
-## Dataset
-The project utilizes the [Flower Recognition](https://www.kaggle.com/alxmamaev/flowers-recognition) dataset from Kaggle, which consists of images of 102 different flower categories. The dataset is divided into training and validation sets.
+Linux/macOS:
 
-## Project Structure
-The project is structured as follows:
-- [deep_learning_project.ipynb](https://github.com/chandramohan0/Flower-Species-Classification/blob/main/deep_learning_project.ipynb): The Jupyter Notebook containing the entire project.
+```bash
+python3 -m venv .venv
+.venv/bin/python -m pip install -r requirements.txt
+.venv/bin/python -m pip install -r requirements-model.txt
+.venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
+```
 
-- `An example image from the dataset`:
+Open http://localhost:8000/docs to try the API. CPU-only PyTorch is installed
+separately to avoid a CUDA runtime. No paid API key or LLM is needed for Phase 1.
+For API-only development without weights, skip the model requirements.
 
-  ![flower](https://github.com/chandramohan0/Flower-Species-Classification/assets/77689644/1cf71b6b-fede-432f-8222-7f98a78df793)
+## Train from the selected Kaggle dataset
 
-- `LICENSE`: The project's open-source license (e.g., MIT License).
+The data preparation script downloads `alxmamaev/flowers-recognition`, validates
+images, removes pixel-identical duplicates and excludes conflicting-label copies.
+It writes a reproducible stratified 70/15/15 split. See
+[the dataset audit](docs/DATASET_AUDIT.md).
 
+After installing the runtime and model requirements:
 
-## Exploring the Dataset
-The Jupyter Notebook provides detailed exploration of the dataset, including image visualization, class distribution, and sample images. It offers insights into the dataset's structure.
+```powershell
+.\.venv\Scripts\python.exe -m scripts.prepare_data
+.\.venv\Scripts\python.exe -m scripts.train --epochs 3 --threads 4
+```
 
-## Data Preparation
-Data preparation includes tasks like data augmentation, resizing images, and creating data loaders. The notebook outlines these essential steps to get the dataset ready for model training.
+Training exports weights, labels and metrics to `artifacts/`. The validation set
+selects the checkpoint; the held-out test set is evaluated after training.
+For longer runs choose `--epochs 10`. Use a separate `--output` folder to retain
+an earlier model; training overwrites checkpoint files in the selected folder.
+CPU training can be slow. No GPU or API key is required, but dependency/data
+downloads need internet. Data and model artifacts stay out of Git.
 
-## GPU Acceleration
-To accelerate model training, the project demonstrates how to move the dataset and model to a GPU if available. This significantly speeds up training times.
+## Recover/export the trained model
 
-## Neural Network Architecture
-The project defines a Convolutional Neural Network (CNN) architecture using PyTorch's neural network module. The notebook provides insights into the layers and components of the model.
+If the original notebook session is still available with its trained `model` and
+`dataset`, run this cell **after training**:
 
-## Model Training
-You can follow the notebook to train the CNN model using the preprocessed data. The training process includes loss computation, gradient descent optimization, and monitoring training progress.
+```python
+from pathlib import Path
+import json
+import torch
 
-## Making Predictions
-After training the model, you can use it to make predictions on sample images. The notebook shows how to load a trained model and use it for inference.
+output = Path("artifacts")
+output.mkdir(exist_ok=True)
+model.eval()
+torch.save({k: v.detach().cpu() for k, v in model.state_dict().items()},
+           output / "flowers-resnet9.pth")
+(output / "classes.json").write_text(json.dumps(dataset.classes), encoding="utf-8")
+```
+
+Download BOTH files from your notebook environment and place them in this
+repository's local `artifacts/` directory, then restart the API. Do not export an
+untrained model. If the old session/weights no longer exist, the model must be
+retrained. Never guess or reorder labels. Only load trusted checkpoint files.
+
+An existing `flowers-resnet9.pth` from this exact training run can also be reused,
+but its matching class-index mapping must be recovered and verified.
+`MODEL_PATH` and `LABELS_PATH` optionally override the default artifact locations.
+Model binaries and private configuration are gitignored.
+
+## Endpoints
+
+| Method | Path | Behavior |
+|---|---|---|
+| GET | `/health` | Process health and model-ready flag |
+| GET | `/ready` | 200 only after successful checkpoint loading; otherwise 503 |
+| GET | `/classes` | Labels from the loaded model's classes.json |
+| POST | `/predict` | Multipart `file`: JPEG/PNG, at most 5 MiB and 12 million pixels |
+
+Example (Windows: use `curl.exe`):
+
+```bash
+curl -X POST http://localhost:8000/predict -F "file=@flower.jpg"
+```
+
+Returns a predicted class, uncalibrated softmax score and top-three scores.
+A high score does **not** prove the image contains a supported flower. No
+out-of-distribution detector or calibrated rejection threshold is implemented.
+Serving uses deterministic Resize(short side=64), CenterCrop(64), ToTensor,
+with no normalization. This deliberately replaces the notebook's random crop
+and requires held-out evaluation before quality claims.
+
+## Verification
+
+```powershell
+.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
+.\.venv\Scripts\python.exe -m pytest -q
+```
+
+Tests cover missing artifacts, invalid uploads, deterministic preprocessing,
+synthetic checkpoint/label wiring and incompatible weights. Model tests skip if
+PyTorch is not installed. Synthetic checkpoints test infrastructure, not accuracy.
+
+## Next milestones
+
+1. Improve baseline quality, especially rose/tulip separation; add independent evaluation.
+2. Add image upload/results UI and measure hosting memory requirements.
+3. Add source-backed care information and a LangGraph tool workflow.
+4. Add user-scoped persistent memory and opt-in reminders.
+
+This is a local-development API foundation. Public deployment needs gateway
+request limits, authentication/rate limiting appropriate to use, and measured
+resource usage. No hosting or Microsoft integration has been provisioned.
 
 ## License
-This project is open-source and is provided under the terms of the [MIT License](LICENSE). You are free to use, modify, and distribute the code in accordance with the license terms.
 
-Feel free to explore the notebook to gain insights into the steps involved in training a deep learning model for flower species classification with PyTorch.
-
-Happy coding!
-This README.md provides a structured overview of your project, making it easy for others to understand and explore the work you've done. Don't forget to replace placeholders, update image paths, and ensure that your project directory structure matches the structure mentioned in the document.
-
+MIT. See [LICENSE](LICENSE).
