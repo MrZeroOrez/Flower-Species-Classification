@@ -12,7 +12,8 @@ def main():
     output.mkdir(exist_ok=True)
     with (output / 'server.log').open('w') as log:
         server = subprocess.Popen([sys.executable, '-m', 'uvicorn', 'app.main:app',
-                                   '--host', '127.0.0.1', '--port', '8011'],
+                                   '--host', '127.0.0.1', '--port', '8011',
+                                   '--workers', '1', '--limit-concurrency', '8'],
                                   stdout=log, stderr=log)
         try:
             deadline = time.monotonic() + 45

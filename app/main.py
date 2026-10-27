@@ -1,4 +1,5 @@
 """Flower prediction and grounded care API. An LLM is optional."""
+import asyncio
 from contextlib import asynccontextmanager
 from io import BytesIO
 import logging
@@ -35,7 +36,8 @@ def decode_image(data):
                 if image.width * image.height > MAX_PIXELS:
                     raise HTTPException(413, "Image exceeds 12 million pixels.")
                 image.load()
-                return ImageOps.exif_transpose(image).convert("RGB")
+                ImageOps.exif_transpose(image, in_place=True)
+                return image.convert("RGB")
     except (UnidentifiedImageError, OSError, ValueError):
         raise HTTPException(400, "Upload a valid JPEG or PNG image.") from None
     except (Image.DecompressionBombWarning, Image.DecompressionBombError):
@@ -53,6 +55,7 @@ def create_app(predictor=None):
     app = FastAPI(title="Flower Lab API", version="0.3.0", lifespan=lifespan)
     app.state.predictor = predictor
     care_graph = build_care_graph()
+    prediction_slots = asyncio.Semaphore(1)
     static_dir = Path(__file__).resolve().parent / "static"
     app.mount("/static", StaticFiles(directory=static_dir), name="static")
 
@@ -82,22 +85,29 @@ def create_app(predictor=None):
 
     @app.post("/predict")
     async def predict(file: UploadFile):
-        try:
-            data = await file.read(MAX_BYTES + 1)
-        finally:
-            await file.close()
-        if not data:
-            raise HTTPException(400, "The uploaded file is empty.")
-        if len(data) > MAX_BYTES:
-            raise HTTPException(413, "Upload must be 5 MiB or smaller.")
-        image = await run_in_threadpool(decode_image, data)
-        if not predictor.ready:
-            raise HTTPException(503, predictor.error)
-        try:
-            return await run_in_threadpool(predictor.predict, image)
-        except Exception:
-            logger.exception("Prediction failed")
-            raise HTTPException(500, "Prediction failed. Check server logs.") from None
+        # Keep image decoding + inference together so large decoded buffers do
+        # not accumulate while other requests wait for the model lock.
+        async with prediction_slots:
+            try:
+                data = await file.read(MAX_BYTES + 1)
+            finally:
+                await file.close()
+            if not data:
+                raise HTTPException(400, "The uploaded file is empty.")
+            if len(data) > MAX_BYTES:
+                raise HTTPException(413, "Upload must be 5 MiB or smaller.")
+            image = await run_in_threadpool(decode_image, data)
+            del data
+            try:
+                if not predictor.ready:
+                    raise HTTPException(503, predictor.error)
+                try:
+                    return await run_in_threadpool(predictor.predict, image)
+                except Exception:
+                    logger.exception("Prediction failed")
+                    raise HTTPException(500, "Prediction failed. Check server logs.") from None
+            finally:
+                image.close()
 
     return app
 

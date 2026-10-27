@@ -41,7 +41,11 @@ An OpenAI-compatible provider/model must support tool calling and required tool
 selection. Choose and check provider quota/pricing yourself; no free usage is
 promised. Restart the server after setting the variables. Do not commit credentials.
 
-When all three are configured, the model gets the selected category and question
+`DISABLE_LLM=true` overrides these variables and prevents provider calls. The
+Render Free blueprint enables this switch. To opt into provider use deliberately,
+unset it or set it to `false` after checking provider pricing.
+
+When all three are configured and the switch permits it, the model gets the selected category and question
 as text (not the uploaded image). One model request may choose exactly one
 `lookup_flower_care` tool call. Arguments are validated against enumerated topics
 and the chosen flower; arbitrary URLs, tools or changed categories are rejected.

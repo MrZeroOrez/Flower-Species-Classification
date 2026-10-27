@@ -60,6 +60,8 @@ class CareState(TypedDict, total=False):
 
 def make_chat_model():
     """Only opt in when all three variables are explicitly configured."""
+    if os.getenv("DISABLE_LLM", "false").lower() == "true":
+        return None
     key, base, model = (os.getenv(name, "") for name in ["LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL"])
     if not all([key, base, model]):
         return None

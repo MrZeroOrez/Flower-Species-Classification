@@ -163,6 +163,15 @@ select a validated lookup tool; it never writes the botanical facts or URLs. See
 [care workflow, sources and optional configuration](docs/CARE_WORKFLOW.md).
 This does not yet add saved conversations, plant profiles, reminders or vector RAG.
 
+## Deploy the demo on Render Free
+
+A one-service deployment blueprint, CPU-only build command, checksum-verified model
+package downloader and LLM kill switch are included. See
+[Render Free setup and billing conditions](docs/DEPLOY_RENDER.md).
+A live service has not been created yet: Render account connection and a public
+model-package URL are still required. Free hosting has sleep and usage limits;
+strict zero spend requires free resources and no payment method on the account.
+
 ## Next milestones
 
 1. Improve baseline quality, especially rose/tulip separation; add independent evaluation.
