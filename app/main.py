@@ -69,7 +69,11 @@ def create_app(predictor=None):
 
     @app.get("/health")
     def health():
-        return {"status": "ok", "model_ready": predictor.ready}
+        result = {"status": "ok", "model_ready": predictor.ready}
+        checkpoint_sha = getattr(predictor, "checkpoint_sha256", None)
+        if predictor.ready and checkpoint_sha:
+            result["checkpoint_sha256"] = checkpoint_sha
+        return result
 
     @app.get("/ready")
     def ready():

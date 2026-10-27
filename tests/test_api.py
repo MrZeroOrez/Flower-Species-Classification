@@ -69,6 +69,7 @@ def test_preprocessing_is_deterministic():
 
 def test_checkpoint_round_trip(tmp_path):
     """Synthetic weights test wiring and label order, NOT real classification accuracy."""
+    import hashlib
     import json
     torch = pytest.importorskip("torch")
     from app.model import ResNet9
@@ -84,6 +85,7 @@ def test_checkpoint_round_trip(tmp_path):
     labels.write_text(json.dumps(["first", "second"]))
     with TestClient(create_app(Predictor(checkpoint, labels))) as client:
         assert client.get("/ready").status_code == 200
+        assert client.get("/health").json()["checkpoint_sha256"] == hashlib.sha256(checkpoint.read_bytes()).hexdigest()
         result = client.post("/predict", files={"file": ("x.png", image_bytes())})
         assert result.status_code == 200
         assert result.json()["predicted_class"] == "second"

@@ -10,7 +10,10 @@ verified. Saved memory, vector retrieval and reminders are not implemented.
 The notebook records five categories: **daisy, dandelion, rose, sunflower, tulip**.
 The original notebook checkpoint is **not present in this repository**. A new
 3-epoch baseline has now been trained: **67.70% held-out test accuracy** on 644
-images. See [training results and class-specific limitations](docs/TRAINING_RESULTS.md).
+images. A fine-tuned **v2 candidate reaches 79.19% overall test accuracy and 75.21% rose recall**
+(up from 28.21%), with tulip recall falling to 70.75% (from 78.23%). The live app
+continues to use v1 until its package URL is upgraded. See
+[training results, confusion counts and trade-offs](docs/TRAINING_RESULTS.md).
 Weights are distributed separately, not committed to Git. The API returns HTTP
 503 until valid weights and label metadata are placed in `artifacts/`.
 
@@ -63,6 +66,28 @@ For longer runs choose `--epochs 10`. Use a separate `--output` folder to retain
 an earlier model; training overwrites checkpoint files in the selected folder.
 CPU training can be slow. No GPU or API key is required, but dependency/data
 downloads need internet. Data and model artifacts stay out of Git.
+
+To fine-tune an existing evaluated checkpoint while preserving the original files:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.train --resume artifacts/flowers-resnet9.pth --output training-output/rose-improvement --epochs 6 --learning-rate 0.0003 --balanced-loss --label-smoothing 0.05 --cosine --selection-metric macro_recall --threads 4
+```
+
+This run uses inverse class-frequency loss weights, a decreasing learning rate,
+and mean per-class validation recall for checkpoint selection. The test set is
+evaluated after selection. `--resume` requires adjacent `classes.json` in the same
+order and refuses to overwrite the input checkpoint. The original split stays fixed;
+reusing this benchmark for comparisons does not make it independent validation.
+
+Export the resulting evaluated checkpoint with:
+
+```powershell
+.\.venv\Scripts\python.exe -m scripts.package_model --model-dir training-output/rose-improvement --output Flower_Classifier_Improved_Model_v2.zip
+```
+
+The exporter checks checkpoint, label order and split provenance against the
+metrics. It refuses to overwrite an existing ZIP. A new package must be reviewed
+and its exact checksums approved in `scripts/fetch_model.py` before deploying it.
 
 ## Recover/export the trained model
 
@@ -168,20 +193,21 @@ This does not yet add saved conversations, plant profiles, reminders or vector R
 A one-service deployment blueprint, CPU-only build command, checksum-verified model
 package downloader and LLM kill switch are included. See
 [Render Free setup and billing conditions](docs/DEPLOY_RENDER.md).
-A live service has not been created yet: Render account connection and a public
-model-package URL are still required. Free hosting has sleep and usage limits;
+[Live Flower Lab](https://flower-species-classification-pp6o.onrender.com/) has
+been verified with readiness, prediction and source-backed care requests. Serving
+success does not establish identification quality. Free hosting has sleep and usage limits;
 strict zero spend requires free resources and no payment method on the account.
 
 ## Next milestones
 
-1. Improve baseline quality, especially rose/tulip separation; add independent evaluation.
-2. Measure hosting memory requirements before deployment; the upload/results UI is implemented.
+1. Validate the v2 candidate on independent photos and improve remaining rose/tulip confusion.
+2. Broaden independent real-photo evaluation while staying within the hosting memory limit.
 3. Verify optional routing with a real configured LLM; expand reviewed knowledge and evaluate answers.
 4. Add user-scoped persistent memory and opt-in reminders.
 
-This is a local-development API foundation. Public deployment needs gateway
+This is a demonstration application. Public deployment needs gateway
 request limits, authentication/rate limiting appropriate to use, and measured
-resource usage. No hosting or Microsoft integration has been provisioned.
+resource usage. Microsoft integration has not been provisioned.
 
 ## License
 

@@ -1,4 +1,5 @@
 """CPU inference. Missing or incompatible checkpoints never produce predictions."""
+import hashlib
 import json
 import logging
 import os
@@ -38,6 +39,7 @@ class Predictor:
         self.labels_path = Path(labels_path or os.getenv(
             "LABELS_PATH", str(ROOT / "artifacts/classes.json")))
         self.model = None
+        self.checkpoint_sha256 = None
         self.classes = []
         self.error = "Model is not loaded."
         self._lock = Lock()
@@ -48,6 +50,7 @@ class Predictor:
 
     def load(self):
         self.model = None
+        self.checkpoint_sha256 = None
         if not self.model_path.is_file() or not self.labels_path.is_file():
             self.error = "Trained weights and classes.json are required. See README."
             return
@@ -66,6 +69,8 @@ class Predictor:
             state = torch.load(self.model_path, map_location="cpu", weights_only=True)
             model.load_state_dict(state, strict=True)
             model.eval()
+            with self.model_path.open("rb") as source:
+                self.checkpoint_sha256 = hashlib.file_digest(source, "sha256").hexdigest()
             self.classes, self.model, self.error = classes, model, None
         except Exception:
             logger.exception("Checkpoint could not be loaded")

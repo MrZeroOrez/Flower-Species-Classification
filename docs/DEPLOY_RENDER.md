@@ -2,7 +2,10 @@
 
 Prepared target: one Python **Free** web service, serving the UI, prediction and
 care workflow together. No database, persistent disk, paid worker or LLM provider
-is needed for this version. A live service has not yet been created or verified.
+is needed for this version. The baseline service was verified on 2026-10-28:
+https://flower-species-classification-pp6o.onrender.com/
+Readiness, a real-image prediction and source-backed care returned HTTP 200.
+This confirms serving/integration, not flower identification accuracy.
 
 ## Cost conditions checked on 2026-10-28
 
@@ -40,10 +43,14 @@ Do not use a ChatGPT Library/download URL: the build cannot authenticate to it.
 2. Attach the exact model ZIP, then publish the release.
 3. Copy the ZIP download link. Set it as `MODEL_PACKAGE_URL` in Render.
 
-The example release name is a suggestion, not an already published release. No
-public model download URL has been verified yet. Do not repack or modify the ZIP;
+The baseline is published at
+https://github.com/MrZeroOrez/Flower-Species-Classification/releases/tag/model-v1.
+Do not repack or modify a published ZIP;
 the downloader verifies the exact package and artifact SHA-256 hashes. It extracts
-only the model and label metadata and fails the build on mismatches.
+only the model and label metadata and fails the build on mismatches. Approved
+older packages remain supported so updating source does not require an immediate
+model replacement. When `MODEL_PACKAGE_URL` is set it takes precedence over
+cached local weights, including during a model upgrade.
 
 If a connected deployment tool can supply these exact model files in its build
 source, the script can also reuse them after hash verification. No retraining runs
@@ -78,7 +85,7 @@ the original notebook. After merging, update the deployment branch deliberately.
 ## Verification and resource evidence
 
 Local checks passed:
-- 39 API/data/care/deployment tests.
+- 47 API/data/care/deployment/training/package tests.
 - Offline import of the exact delivered ZIP, hash checks and checkpoint loading.
 - Real-image prediction and no-key care endpoint: HTTP 200.
 - Initial prediction/care process peak RSS: about 375 MiB.
@@ -97,3 +104,23 @@ deployment is complete until the public URL passes these checks.
 Persistent conversations, accounts and plant memory are not implemented. Free
 Render local files would not provide durable memory; choose storage separately
 when that phase is built. No card or paid resource is needed for the current demo.
+
+## Upgrade to the v2 rose-focused candidate
+
+The v2 package improves rose recall but reduces tulip recall; read
+[the measured trade-offs](TRAINING_RESULTS.md) before switching. The live service
+was verified with v1; v2 has been verified locally but is not yet published/deployed.
+
+1. Create a new GitHub release with tag `model-v2`, targeting the updated
+   `feature/flower-agent-phase-1` branch. Attach the unchanged
+   `Flower_Classifier_Improved_Model_v2.zip`. Preserve the v1 release.
+2. Copy its ZIP asset download URL into Render's `MODEL_PACKAGE_URL`. Keep all
+   other free-service settings and `DISABLE_LLM=true`.
+3. Manually deploy the latest branch commit. The URL takes priority over cached
+   old weights, so a normal deployment is sufficient.
+4. Check `/health`: `model_ready` should be true and `checkpoint_sha256` should be
+   `6ad46d27975a4ba1430f316a9127bb13abfced63837287b89823a7960ab66be2`.
+   Then retry independent rose **and** tulip photos.
+
+To roll back, restore the v1 asset URL and manually redeploy. Both package hashes
+remain approved; no retraining or extra cloud service is needed on Render.

@@ -53,6 +53,26 @@ def test_bad_package_rejected_before_extracting(tmp_path, monkeypatch):
         fetch_model.install_package(archive, tmp_path / "out")
 
 
+def test_approved_new_package_can_replace_baseline(tmp_path, monkeypatch):
+    archive = package_fixture(tmp_path, monkeypatch)
+    monkeypatch.setattr(fetch_model, "ADDITIONAL_PACKAGES", {
+        fetch_model.digest(archive): dict(fetch_model.ARTIFACTS)})
+    monkeypatch.setattr(fetch_model, "PACKAGE_SHA256", "older-baseline-package")
+    output = tmp_path / "out"
+    fetch_model.install_package(archive, output)
+    assert (output / "flowers-resnet9.pth").read_bytes() == b"model"
+
+
+def test_changed_release_url_wins_over_verified_cached_model(tmp_path, monkeypatch):
+    archive = package_fixture(tmp_path, monkeypatch)
+    output = tmp_path / "out"
+    fetch_model.install_package(archive, output)
+    calls = []
+    monkeypatch.setattr(fetch_model, "fetch", lambda url, target: calls.append((url, target)))
+    fetch_model.ensure_model(output, "https://example.org/model-v2.zip")
+    assert calls == [("https://example.org/model-v2.zip", output)]
+
+
 def test_llm_kill_switch_wins_over_existing_credentials(monkeypatch):
     monkeypatch.setenv("DISABLE_LLM", "true")
     for name in ["LLM_API_KEY", "LLM_BASE_URL", "LLM_MODEL"]:

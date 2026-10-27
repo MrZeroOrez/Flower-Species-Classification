@@ -1,0 +1,189 @@
+{
+  "source": "https://www.kaggle.com/datasets/alxmamaev/flowers-recognition",
+  "archive_sha256": "eb9a26fc06854affdd50ea1f7987ab6676f22f6f80c3a71f175249fdc8e888a3",
+  "manifest_sha256": "c4e2711d11bdd08c3bcbe48f194adaea71b7aa14a589c82fd5d325170417b043",
+  "checkpoint_sha256": "6ad46d27975a4ba1430f316a9127bb13abfced63837287b89823a7960ab66be2",
+  "architecture": "ResNet9",
+  "torch_version": "2.14.1+cpu",
+  "seed": 42,
+  "split_seed": 42,
+  "epochs": 6,
+  "batch_size": 32,
+  "learning_rate": 0.0003,
+  "threads": 4,
+  "classes": [
+    "daisy",
+    "dandelion",
+    "rose",
+    "sunflower",
+    "tulip"
+  ],
+  "split_counts": {
+    "validation": 644,
+    "test": 644,
+    "train": 3019
+  },
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.8429438439020458,
+      "validation_accuracy": 0.734472049689441,
+      "validation_loss": 0.7053064670621979,
+      "validation_macro_recall": 0.7368914984249411,
+      "validation_per_class_recall": {
+        "daisy": 0.7017543859649122,
+        "dandelion": 0.7898089171974523,
+        "rose": 0.7094017094017094,
+        "sunflower": 0.8440366972477065,
+        "tulip": 0.6394557823129252
+      },
+      "learning_rate": 0.0003,
+      "seconds": 141.8
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.7769388628937859,
+      "validation_accuracy": 0.7531055900621118,
+      "validation_loss": 0.6537214495380472,
+      "validation_macro_recall": 0.7444768208964095,
+      "validation_per_class_recall": {
+        "daisy": 0.7192982456140351,
+        "dandelion": 0.8471337579617835,
+        "rose": 0.5299145299145299,
+        "sunflower": 0.8165137614678899,
+        "tulip": 0.8095238095238095
+      },
+      "learning_rate": 0.0002809086200392825,
+      "seconds": 145.35
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.6822623521849666,
+      "validation_accuracy": 0.7934782608695652,
+      "validation_loss": 0.613653262209448,
+      "validation_macro_recall": 0.7853425079719648,
+      "validation_per_class_recall": {
+        "daisy": 0.7368421052631579,
+        "dandelion": 0.9044585987261147,
+        "rose": 0.6410256410256411,
+        "sunflower": 0.8348623853211009,
+        "tulip": 0.8095238095238095
+      },
+      "learning_rate": 0.00022875,
+      "seconds": 130.44
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.6805433939134258,
+      "validation_accuracy": 0.7841614906832298,
+      "validation_loss": 0.5939649926579517,
+      "validation_macro_recall": 0.7769672590081733,
+      "validation_per_class_recall": {
+        "daisy": 0.6754385964912281,
+        "dandelion": 0.89171974522293,
+        "rose": 0.6410256410256411,
+        "sunflower": 0.8807339449541285,
+        "tulip": 0.7959183673469388
+      },
+      "learning_rate": 0.00015749999999999998,
+      "seconds": 133.74
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.6364173246717247,
+      "validation_accuracy": 0.7981366459627329,
+      "validation_loss": 0.5754120089807866,
+      "validation_macro_recall": 0.7971873246574932,
+      "validation_per_class_recall": {
+        "daisy": 0.7192982456140351,
+        "dandelion": 0.8789808917197452,
+        "rose": 0.7606837606837606,
+        "sunflower": 0.8990825688073395,
+        "tulip": 0.7278911564625851
+      },
+      "learning_rate": 8.625000000000002e-05,
+      "seconds": 132.17
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.6006657432427901,
+      "validation_accuracy": 0.8027950310559007,
+      "validation_loss": 0.5687191721445285,
+      "validation_macro_recall": 0.7945157659669206,
+      "validation_per_class_recall": {
+        "daisy": 0.7368421052631579,
+        "dandelion": 0.9235668789808917,
+        "rose": 0.6837606837606838,
+        "sunflower": 0.8256880733944955,
+        "tulip": 0.8027210884353742
+      },
+      "learning_rate": 3.409137996071748e-05,
+      "seconds": 130.54
+    }
+  ],
+  "best_epoch": 5,
+  "selection_metric": "macro_recall",
+  "best_selection_score": 0.7971873246574932,
+  "best_validation_accuracy": 0.7981366459627329,
+  "initial_checkpoint_sha256": "f27aa366cf3700d20ecd54bf5e40e2af995d10cf5c7ee3358f0a4cfdda493eb8",
+  "balanced_loss": true,
+  "label_smoothing": 0.05,
+  "cosine_schedule": true,
+  "test": {
+    "accuracy": 0.7919254658385093,
+    "loss": 0.5527942169527089,
+    "count": 644,
+    "confusion_matrix": [
+      [
+        86,
+        14,
+        7,
+        5,
+        2
+      ],
+      [
+        4,
+        134,
+        2,
+        11,
+        6
+      ],
+      [
+        0,
+        14,
+        88,
+        3,
+        12
+      ],
+      [
+        1,
+        6,
+        1,
+        98,
+        3
+      ],
+      [
+        3,
+        11,
+        23,
+        6,
+        104
+      ]
+    ],
+    "macro_recall": 0.7933182927534055,
+    "per_class_recall": {
+      "daisy": 0.7543859649122807,
+      "dandelion": 0.8535031847133758,
+      "rose": 0.7521367521367521,
+      "sunflower": 0.8990825688073395,
+      "tulip": 0.7074829931972789
+    }
+  },
+  "total_seconds": 828.33,
+  "preprocessing": "RGB, shortest-side resize 64 bilinear, center crop 64, divide by 255",
+  "limitations": [
+    "Pixel-identical copies are excluded; near-duplicates and same-photo crops may remain. Test data is not an external benchmark.",
+    "Uncalibrated softmax scores",
+    "No unsupported-image rejection or disease diagnosis"
+  ]
+}

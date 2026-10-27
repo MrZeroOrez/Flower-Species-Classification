@@ -1,4 +1,4 @@
-"""Fetch the separately delivered baseline package at build time; verify provenance.
+"""Fetch an approved model package at build time; verify provenance.
 
 Render: set MODEL_PACKAGE_URL to a public HTTPS download (e.g. a GitHub release
 asset). Offline verification: python -m scripts.fetch_model --archive PATH.
@@ -19,6 +19,13 @@ ARTIFACTS = {
     "flowers-resnet9.pth": "f27aa366cf3700d20ecd54bf5e40e2af995d10cf5c7ee3358f0a4cfdda493eb8",
     "classes.json": "01118f4ea759247969a766910c0864f1a186ccfd161b5285d719692906618277",
 }
+# Older deployments can keep using model-v1 while a newer package is rolled out.
+ADDITIONAL_PACKAGES = {
+    "243399685dd13082235a2a8c18ebb03577a4d00ba9d1c7fe00391a44f2ba8aad": {
+        "flowers-resnet9.pth": "6ad46d27975a4ba1430f316a9127bb13abfced63837287b89823a7960ab66be2",
+        "classes.json": "01118f4ea759247969a766910c0864f1a186ccfd161b5285d719692906618277",
+    },
+}
 MAX_PACKAGE_BYTES = 40 * 1024 * 1024
 
 
@@ -32,13 +39,18 @@ def digest(path):
 
 def install_package(archive, output):
     archive, output = Path(archive), Path(output)
-    if archive.stat().st_size > MAX_PACKAGE_BYTES or digest(archive) != PACKAGE_SHA256:
-        raise ValueError("Package checksum/size mismatch. Use the exact delivered baseline ZIP.")
+    if archive.stat().st_size > MAX_PACKAGE_BYTES:
+        raise ValueError("Package checksum/size mismatch. Use an approved model ZIP.")
+    package_sha = digest(archive)
+    expected_artifacts = (ARTIFACTS if package_sha == PACKAGE_SHA256
+                          else ADDITIONAL_PACKAGES.get(package_sha))
+    if not expected_artifacts:
+        raise ValueError("Package checksum/size mismatch. Use an approved model ZIP.")
     output.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(dir=output) as temporary:
         staged = Path(temporary)
         with ZipFile(archive) as package:
-            for name, expected in ARTIFACTS.items():
+            for name, expected in expected_artifacts.items():
                 entry = package.getinfo("artifacts/" + name)
                 if entry.file_size > MAX_PACKAGE_BYTES:
                     raise ValueError("Artifact exceeds size limit")
@@ -47,7 +59,7 @@ def install_package(archive, output):
                 if digest(staged / name) != expected:
                     raise ValueError("Artifact checksum mismatch: " + name)
         # Both artifacts are verified before replacing either existing file.
-        for name in ARTIFACTS:
+        for name in expected_artifacts:
             (staged / name).replace(output / name)
 
 
@@ -69,6 +81,17 @@ def fetch(url, output):
         install_package(archive, output)
 
 
+def ensure_model(output, package_url=""):
+    output = Path(output)
+    if package_url:
+        # A release URL change must win over weights left in a build cache.
+        fetch(package_url, output)
+    elif not any(all((output / name).is_file() and digest(output / name) == expected
+                     for name, expected in artifacts.items())
+                 for artifacts in [ARTIFACTS, *ADDITIONAL_PACKAGES.values()]):
+        raise ValueError("MODEL_PACKAGE_URL is required. Publish an approved model ZIP as a GitHub release asset and supply its public download URL. See docs/DEPLOY_RENDER.md.")
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--archive", type=Path)
@@ -76,12 +99,9 @@ if __name__ == "__main__":
     args = parser.parse_args()
     if args.archive:
         install_package(args.archive, args.output)
-    elif all((args.output / name).is_file() and digest(args.output / name) == expected
-             for name, expected in ARTIFACTS.items()):
-        print("Verified existing baseline artifacts")
     else:
-        package_url = os.getenv("MODEL_PACKAGE_URL", "")
-        if not package_url:
-            raise SystemExit("MODEL_PACKAGE_URL is required. Publish the provided model ZIP as a GitHub release asset and supply its public download URL. See docs/DEPLOY_RENDER.md.")
-        fetch(package_url, args.output)
-    print("Baseline model artifacts verified")
+        try:
+            ensure_model(args.output, os.getenv("MODEL_PACKAGE_URL", ""))
+        except ValueError as error:
+            raise SystemExit(str(error)) from None
+    print("Approved model artifacts verified")
