@@ -1,213 +1,250 @@
 # Flower Identification & Care AI Agent
 
-An incremental extension of the original PyTorch flower classification notebook.
-**Current implementation: prediction API, trained baseline, upload UI and source-backed
-LangGraph care workflow.** Optional LLM tool routing is implemented but not live-provider
-verified. Saved memory, vector retrieval and reminders are not implemented.
+A Python application that identifies five flower categories from photos and provides
+source-backed care guidance through a bounded LangGraph tool workflow.
 
-## Current status
+**[Live demo](https://flower-species-classification-pp6o.onrender.com/)** ·
+**[API documentation](https://flower-species-classification-pp6o.onrender.com/docs)** ·
+**[Download v2 model](https://github.com/MrZeroOrez/Flower-Species-Classification/releases/tag/model-v2)**
 
-The notebook records five categories: **daisy, dandelion, rose, sunflower, tulip**.
-The original notebook checkpoint is **not present in this repository**. A new
-3-epoch baseline has now been trained: **67.70% held-out test accuracy** on 644
-images. A fine-tuned **v2 candidate reaches 79.19% overall test accuracy and 75.21% rose recall**
-(up from 28.21%), with tulip recall falling to 70.75% (from 78.23%). The live app
-continues to use v1 until its package URL is upgraded. See
-[training results, confusion counts and trade-offs](docs/TRAINING_RESULTS.md).
-Weights are distributed separately, not committed to Git. The API returns HTTP
-503 until valid weights and label metadata are placed in `artifacts/`.
+The application code is merged into **`main`**. The deployed service was checked on
+2026-10-28: `/health` returned HTTP 200, `model_ready: true`, and the exact v2
+checkpoint hash. Free hosting can take time to wake after inactivity.
 
-The original notebook is preserved in `deep_learning_project.ipynb`. See
-[the source audit and completion gates](docs/PHASE_1.md) and
-[the original project description](docs/ORIGINAL_README.md).
+## Features
 
-## Run locally (Python 3.11 or 3.12 recommended)
+- Upload or drag in a JPEG/PNG image, preview it, and compare the top three model scores.
+- Identify **daisy, dandelion, rose, sunflower and tulip** using a CPU PyTorch ResNet9.
+- Explore care references for sunlight, soil, watering, pruning and seasons, with source links.
+- Run a bounded LangGraph workflow that selects a typed `lookup_flower_care` tool and returns reviewed evidence or an honest clarification/abstention.
+- Run without an LLM API key. Optional remote LLM tool routing is available separately.
+- Validate uploads, preserve phone-photo orientation, and handle unavailable models and stale requests.
+- Download approved model packages with SHA-256 verification and check the loaded checkpoint through `/health`.
 
-Windows PowerShell, from the repository folder:
+Uploaded photos are not saved by the application. Care guidance also works without
+classifier weights; users can select or correct the flower category manually.
+
+## Technology
+
+| Component | Implementation |
+|---|---|
+| Backend | Python, FastAPI, Uvicorn, Pydantic |
+| Image classifier | PyTorch ResNet9, NumPy, Pillow; CPU inference |
+| Agent workflow | LangGraph and a typed care-lookup tool |
+| Knowledge | Curated structured profiles with RHS and NC State Extension citations |
+| Interface | HTML, CSS and JavaScript served by FastAPI |
+| Verification | pytest, FastAPI TestClient; optional Playwright browser checks |
+| Deployment | One Render Free Python web service; separately published model assets |
+
+The no-key care mode is labelled **Guided source lookup**. It retrieves curated
+facts; it is not free-form LLM chat or vector RAG. Saved conversation memory,
+plant profiles, reminders and Microsoft 365 integration are not implemented.
+
+## Model results and limitations
+
+The v2 model fine-tunes the original three-epoch baseline for six additional CPU
+epochs. The checkpoint was selected at fine-tuning epoch 5 using validation macro
+recall, giving each class equal importance. The same 644-image test split was used
+for comparison; these results are not an independent real-world benchmark.
+
+| Metric | Baseline v1 | Deployed v2 |
+|---|---:|---:|
+| Overall test accuracy | 67.70% | 79.19% |
+| Daisy recall | 73.68% | 75.44% |
+| Dandelion recall | 90.45% | 85.35% |
+| Rose recall | 28.21% | 75.21% |
+| Sunflower recall | 56.88% | 89.91% |
+| Tulip recall | 78.23% | 70.75% |
+| Rose → tulip errors, out of 117 roses | 58 | 12 |
+| Tulip → rose errors, out of 147 tulips | 5 | 23 |
+
+**Trade-off:** v2 improves rose recognition and overall accuracy, while tulip and
+dandelion recall decline. Rose/tulip separation remains imperfect. A displayed
+score is an **uncalibrated model score**, not identification certainty. Unsupported
+flowers and non-flower images can still receive high scores. Confirm the flower
+before following its care guidance. No disease diagnosis or unsupported-image
+rejection is implemented.
+
+See [training results](docs/TRAINING_RESULTS.md),
+[full v2 metrics and confusion matrix](docs/model-v2-metrics.json), and
+[dataset audit](docs/DATASET_AUDIT.md). Exact pixel duplicates were removed, but
+near-duplicates or crops of the same photograph may remain across splits.
+
+## Run locally
+
+Use Python 3.11 or 3.12. Clone the merged application:
+
+```bash
+git clone https://github.com/MrZeroOrez/Flower-Species-Classification.git
+cd Flower-Species-Classification
+```
+
+### Windows PowerShell
 
 ```powershell
 python -m venv .venv
 .\.venv\Scripts\python.exe -m pip install -r requirements.txt
 .\.venv\Scripts\python.exe -m pip install -r requirements-model.txt
+$env:DISABLE_LLM = "true"
+$env:MODEL_PACKAGE_URL = "https://github.com/MrZeroOrez/Flower-Species-Classification/releases/download/model-v2/Flower_Classifier_Improved_Model_v2.zip"
+.\.venv\Scripts\python.exe -m scripts.fetch_model
 .\.venv\Scripts\python.exe -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Linux/macOS:
+### Linux / macOS shell
 
 ```bash
 python3 -m venv .venv
 .venv/bin/python -m pip install -r requirements.txt
 .venv/bin/python -m pip install -r requirements-model.txt
+export DISABLE_LLM=true
+export MODEL_PACKAGE_URL="https://github.com/MrZeroOrez/Flower-Species-Classification/releases/download/model-v2/Flower_Classifier_Improved_Model_v2.zip"
+.venv/bin/python -m scripts.fetch_model
 .venv/bin/python -m uvicorn app.main:app --host 127.0.0.1 --port 8000
 ```
 
-Open http://localhost:8000 for the image upload UI, or http://localhost:8000/docs
-to try the API directly. CPU-only PyTorch is installed
-separately to avoid a CUDA runtime. No paid API key or LLM is needed for Phase 1.
-For API-only development without weights, skip the model requirements.
+CPU wheel availability depends on platform; unsupported platforms may need their
+platform-specific PyTorch installation. Open http://127.0.0.1:8000 or
+http://127.0.0.1:8000/docs. No Node runtime or frontend build is needed to serve the
+app. Dependencies and model downloads require internet access.
 
-## Train from the selected Kaggle dataset
+For API/care development without a classifier, omit the model requirements and
+model download. Prediction and readiness return HTTP 503 until valid weights and
+matching labels are available. `MODEL_PATH` and `LABELS_PATH` can override their
+locations. Only load trusted checkpoints; never guess or reorder labels.
 
-The data preparation script downloads `alxmamaev/flowers-recognition`, validates
-images, removes pixel-identical duplicates and excludes conflicting-label copies.
-It writes a reproducible stratified 70/15/15 split. See
-[the dataset audit](docs/DATASET_AUDIT.md).
-
-After installing the runtime and model requirements:
-
-```powershell
-.\.venv\Scripts\python.exe -m scripts.prepare_data
-.\.venv\Scripts\python.exe -m scripts.train --epochs 3 --threads 4
-```
-
-Training exports weights, labels and metrics to `artifacts/`. The validation set
-selects the checkpoint; the held-out test set is evaluated after training.
-For longer runs choose `--epochs 10`. Use a separate `--output` folder to retain
-an earlier model; training overwrites checkpoint files in the selected folder.
-CPU training can be slow. No GPU or API key is required, but dependency/data
-downloads need internet. Data and model artifacts stay out of Git.
-
-To fine-tune an existing evaluated checkpoint while preserving the original files:
-
-```powershell
-.\.venv\Scripts\python.exe -m scripts.train --resume artifacts/flowers-resnet9.pth --output training-output/rose-improvement --epochs 6 --learning-rate 0.0003 --balanced-loss --label-smoothing 0.05 --cosine --selection-metric macro_recall --threads 4
-```
-
-This run uses inverse class-frequency loss weights, a decreasing learning rate,
-and mean per-class validation recall for checkpoint selection. The test set is
-evaluated after selection. `--resume` requires adjacent `classes.json` in the same
-order and refuses to overwrite the input checkpoint. The original split stays fixed;
-reusing this benchmark for comparisons does not make it independent validation.
-
-Export the resulting evaluated checkpoint with:
-
-```powershell
-.\.venv\Scripts\python.exe -m scripts.package_model --model-dir training-output/rose-improvement --output Flower_Classifier_Improved_Model_v2.zip
-```
-
-The exporter checks checkpoint, label order and split provenance against the
-metrics. It refuses to overwrite an existing ZIP. A new package must be reviewed
-and its exact checksums approved in `scripts/fetch_model.py` before deploying it.
-
-## Recover/export the trained model
-
-If the original notebook session is still available with its trained `model` and
-`dataset`, run this cell **after training**:
-
-```python
-from pathlib import Path
-import json
-import torch
-
-output = Path("artifacts")
-output.mkdir(exist_ok=True)
-model.eval()
-torch.save({k: v.detach().cpu() for k, v in model.state_dict().items()},
-           output / "flowers-resnet9.pth")
-(output / "classes.json").write_text(json.dumps(dataset.classes), encoding="utf-8")
-```
-
-Download BOTH files from your notebook environment and place them in this
-repository's local `artifacts/` directory, then restart the API. Do not export an
-untrained model. If the old session/weights no longer exist, the model must be
-retrained. Never guess or reorder labels. Only load trusted checkpoint files.
-
-An existing `flowers-resnet9.pth` from this exact training run can also be reused,
-but its matching class-index mapping must be recovered and verified.
-`MODEL_PATH` and `LABELS_PATH` optionally override the default artifact locations.
-Model binaries and private configuration are gitignored.
-
-## Endpoints
+## API
 
 | Method | Path | Behavior |
 |---|---|---|
-| GET | `/health` | Process health and model-ready flag |
-| GET | `/ready` | 200 only after successful checkpoint loading; otherwise 503 |
-| GET | `/classes` | Labels from the loaded model's classes.json |
-| POST | `/predict` | Multipart `file`: JPEG/PNG, at most 5 MiB and 12 million pixels |
-
-Example (Windows: use `curl.exe`):
+| GET | `/` | Upload interface and care panel |
+| GET | `/health` | Process health, model readiness and loaded checkpoint SHA-256 |
+| GET | `/ready` | HTTP 200 when the model is loaded; otherwise 503 |
+| GET | `/classes` | Class-index mapping from the loaded model |
+| POST | `/predict` | Multipart field `file`; JPEG/PNG, at most 5 MiB and 12 million pixels |
+| POST | `/care/chat` | JSON `flower` and optional `question`; reviewed care facts and citations |
+| GET | `/docs` | Interactive OpenAPI documentation |
 
 ```bash
-curl -X POST http://localhost:8000/predict -F "file=@flower.jpg"
+curl -X POST http://127.0.0.1:8000/predict -F "file=@flower.jpg"
+curl -X POST http://127.0.0.1:8000/care/chat -H "Content-Type: application/json" -d '{"flower":"rose","question":"How should I water it?"}'
 ```
 
-Returns a predicted class, uncalibrated softmax score and top-three scores.
-A high score does **not** prove the image contains a supported flower. No
-out-of-distribution detector or calibrated rejection threshold is implemented.
-Serving uses deterministic Resize(short side=64), CenterCrop(64), ToTensor,
-with no normalization. This deliberately replaces the notebook's random crop
-and requires held-out evaluation before quality claims.
+Use `curl.exe` in Windows PowerShell; the care JSON example above uses POSIX shell
+quoting. Serving preprocessing is RGB, shortest-side resize to 64 pixels, centre
+crop to 64 × 64, then division by 255, without additional normalization.
+
+## Care workflow and optional LLM routing
+
+Care references cover the five categories, with species/cultivar caveats. Unknown
+or uncovered questions receive a clarification or abstention. The tool returns
+reviewed facts and citations rather than generating botanical claims.
+
+Optional LLM routing requires `requirements-llm.txt` and all three server variables:
+`LLM_API_KEY`, `LLM_BASE_URL` and `LLM_MODEL`. It makes at most one bounded call to
+select validated tool arguments; failures fall back to guided lookup with a notice.
+This optional integration has been tested with fake models, not a live provider.
+**`DISABLE_LLM=true` overrides credentials and prevents provider calls.**
+
+See [workflow, sources and configuration](docs/CARE_WORKFLOW.md).
+
+## Training and model export
+
+Dataset: [Kaggle Flowers Recognition](https://www.kaggle.com/datasets/alxmamaev/flowers-recognition).
+Preparation audits 4,317 images, excludes two duplicate copies and eight
+conflicting-label images, and creates seeded splits of 3,019 training, 644
+validation and 644 test images.
+
+Run these modules with the Python executable from your virtual environment:
+
+```bash
+python -m scripts.prepare_data
+python -m scripts.train --epochs 3 --threads 4
+python -m scripts.train --resume artifacts/flowers-resnet9.pth --output training-output/rose-improvement --epochs 6 --learning-rate 0.0003 --balanced-loss --label-smoothing 0.05 --cosine --selection-metric macro_recall --threads 4
+python -m scripts.package_model --model-dir training-output/rose-improvement --output Flower_Classifier_Improved_Model_v2.zip
+```
+
+The second training command reproduces the fine-tuning configuration: balanced
+loss, label smoothing and cosine learning-rate decay. It requires the baseline
+checkpoint and adjacent `classes.json`. Use a separate output directory to retain
+earlier weights. Test evaluation follows validation-based checkpoint selection.
+Training is CPU-intensive and is not run on Render during deployment.
+
+The exporter verifies checkpoint, labels and dataset-split provenance against the
+metrics. It refuses to overwrite an existing ZIP. Publish a newly trained model
+under a new package name, approve its exact checksums in `scripts/fetch_model.py`,
+and update the deployment URL deliberately. Do not replace an immutable release
+asset with different bytes. Weights, dataset images and private configuration are
+excluded from Git.
+
+The historical notebook remains in `deep_learning_project.ipynb`; its original
+weights were not recovered. See [original project description](docs/ORIGINAL_README.md)
+and [initial implementation audit](docs/PHASE_1.md).
 
 ## Verification
 
-```powershell
-.\.venv\Scripts\python.exe -m pip install -r requirements-dev.txt
-.\.venv\Scripts\python.exe -m pytest -q
+**47 Python tests passed** for the merged implementation. They cover API/upload
+validation, deterministic inference and label wiring, care evidence and abstention,
+tool-routing fallbacks, concurrency, per-class evaluation, package provenance and
+model-cache upgrade behavior. Synthetic checkpoints test wiring, not accuracy.
+
+```bash
+python -m pip install -r requirements-dev.txt
+python -m pytest -q
 ```
 
-Tests cover missing artifacts, invalid uploads, deterministic preprocessing,
-synthetic checkpoint/label wiring and incompatible weights. Model tests skip if
-PyTorch is not installed. Synthetic checkpoints test infrastructure, not accuracy.
+Model tests skip if PyTorch is unavailable. Optional browser checks require Node,
+the dataset manifest/images, and trained artifacts:
 
-## Image upload UI
-
-The home page is served by the same FastAPI process, using local HTML/CSS/JS.
-No Node runtime, frontend build, CDN or extra hosting service is required to run it.
-Choose or drag in one JPEG/PNG image, inspect its preview, and select **Identify
-flower**. Results show the top class and three model scores. Scores are explicitly
-uncalibrated; the baseline quality limitations stay visible.
-
-The UI handles empty/invalid/oversized images, missing model artifacts, network
-failures, server errors and request timeouts. Replacing or clearing an image
-cancels the old request, preventing stale results. The API does not save uploads.
-
-Optional browser checks (Node.js required only for this verification):
-
-```powershell
-npm install
+```bash
+npm ci
 npx playwright install chromium
-.\.venv\Scripts\python.exe -m scripts.check_browser
+python -m scripts.check_browser
 ```
 
-These checks require `data/manifest.json`, dataset images and trained artifacts
-from the earlier preparation/training steps. The runner temporarily starts the
-API on port 8011 and stops it after checking the browser flow. Screenshots and
-logs are local, ignored QA files. See [UI verification](docs/UI_VERIFICATION.md).
+The browser runner starts a temporary local API on port 8011 and stops it after
+checking the UI. Prior end-to-end checks covered real-image inference, reset/error
+states, care citations/abstention and mobile layout. V2 was separately verified by
+package import, checkpoint loading and a real-image API regression check. See
+[UI verification](docs/UI_VERIFICATION.md).
 
-## Flower care and LangGraph
+## Deploy on Render Free
 
-The home page includes a care panel with source-linked answers for the five
-categories. A prediction preselects a category, which you can correct manually.
-Select **Show care guide**, or ask about light, soil, watering, pruning or season.
-References also work without classifier weights. Unknown or uncovered questions
-receive a clarification/refusal instead of invented care instructions.
+Use the **`main`** branch for the merged application. For an existing service,
+change **Settings → Build & Deploy → Branch** to `main` before the next deployment.
+The existing blueprint and older setup notes name the original feature branch;
+select `main` explicitly when using those instructions.
 
-The default **Guided source lookup** uses no LLM key. An optional remote model can
-select a validated lookup tool; it never writes the botanical facts or URLs. See
-[care workflow, sources and optional configuration](docs/CARE_WORKFLOW.md).
-This does not yet add saved conversations, plant profiles, reminders or vector RAG.
+- Runtime: Python; compute: **Free**; root directory: blank.
+- Build: `bash scripts/render_build.sh`
+- Start: `python -m uvicorn app.main:app --host 0.0.0.0 --port $PORT --workers 1 --limit-concurrency 8`
+- Health check: `/ready`; deployments: manual.
+- Environment: `PYTHON_VERSION=3.12.10`, `DISABLE_LLM=true`, `OMP_NUM_THREADS=1`, `MKL_NUM_THREADS=1`.
+- Set `MODEL_PACKAGE_URL` to the v2 ZIP asset download URL shown in the local setup.
 
-## Deploy the demo on Render Free
+After deploying, `/health` should report this v2 checkpoint SHA-256:
 
-A one-service deployment blueprint, CPU-only build command, checksum-verified model
-package downloader and LLM kill switch are included. See
-[Render Free setup and billing conditions](docs/DEPLOY_RENDER.md).
-[Live Flower Lab](https://flower-species-classification-pp6o.onrender.com/) has
-been verified with readiness, prediction and source-backed care requests. Serving
-success does not establish identification quality. Free hosting has sleep and usage limits;
-strict zero spend requires free resources and no payment method on the account.
+```text
+6ad46d27975a4ba1430f316a9127bb13abfced63837287b89823a7960ab66be2
+```
 
-## Next milestones
+Both v1 and v2 package hashes remain approved. To roll back the model, restore the
+v1 release-asset URL and manually redeploy. No extra hosting service is required.
 
-1. Validate the v2 candidate on independent photos and improve remaining rose/tulip confusion.
-2. Broaden independent real-photo evaluation while staying within the hosting memory limit.
-3. Verify optional routing with a real configured LLM; expand reviewed knowledge and evaluate answers.
-4. Add user-scoped persistent memory and opt-in reminders.
+Free hosting has idle sleep and shared usage limits. Strict zero cash spend
+requires free resources and no saved payment method; accounts with a payment
+method can incur usage overages. See [deployment instructions and billing
+conditions](docs/DEPLOY_RENDER.md) for details and local memory measurements.
+This is a demonstration application with imperfect recognition; broader public
+use also needs appropriate request controls and measured resource usage.
 
-This is a demonstration application. Public deployment needs gateway
-request limits, authentication/rate limiting appropriate to use, and measured
-resource usage. Microsoft integration has not been provisioned.
+## Future work
+
+1. Evaluate independent real photos and improve rose/tulip separation without hiding class-level regressions.
+2. Add and evaluate unsupported-image rejection and score calibration.
+3. Verify optional LLM routing with a live provider and expand reviewed care coverage.
+4. Add user-scoped persistent memory, plant profiles and opt-in reminders.
+5. Explore vector RAG and Microsoft 365 integration as separate features.
 
 ## License
 
