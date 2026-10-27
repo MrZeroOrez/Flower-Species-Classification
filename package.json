@@ -1,0 +1,8 @@
+{
+  "name": "flower-lab-browser-checks",
+  "private": true,
+  "version": "0.2.0",
+  "description": "Optional browser verification; the application itself needs no Node runtime.",
+  "scripts": { "test:e2e": "node tests/browser.cjs" },
+  "devDependencies": { "playwright": "1.62.1" }
+}

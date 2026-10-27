@@ -1,0 +1,13 @@
+.venv/
+__pycache__/
+.pytest_cache/
+.env
+*.pth
+*.pt
+artifacts/*
+!artifacts/.gitkeep
+uploads/
+data/
+training-output/
+node_modules/
+.ui-qa/
